@@ -4,11 +4,12 @@ import Lab_4 from "../components/Lab_4";
 const Laboratorio4 = () => {
   return (
     <div style={{ padding: "2rem" }}>
-      <h1>Laboratorio 3: Agrupacion de Elementos sin React</h1>
+      <h1>Ejercicios Manejo Fisicas: Efectos Automovil</h1>
       <p>
-        Este ejercicio muestra un escenario 3D con una base y tres figuras geométricas (cubo, esfera y cono)
+        Este ejercicio integra un automovil 3D con sus luces realistas y efecto de sonido de colision 
+        cuando el modelo interactua con el escenario.
       </p>
-      <div style={{ height: "600px" }}>
+      <div style={{ height: "800px" }}>
         <Lab_4 />
       </div>
     </div>

@@ -8,6 +8,8 @@ const ManejoFisicas = () => {
     const mountRef = useRef(null);
     const [barriersEnabled, setBarriersEnabled] = useState(true);
     const [roofEnabled, setRoofEnabled] = useState(true);
+    const [moveSpeed, setMoveSpeed] = useState(10);
+    const [friction, setFriction] = useState(0.45);
     const barriers = useRef([]);
     const roof = useRef(null);
 
@@ -338,20 +340,23 @@ const ManejoFisicas = () => {
             const deltaTime = elapsedTime - oldElapsedTime;
             oldElapsedTime = elapsedTime;
 
-            const moveSpeed = 10;
+            // Movimiento del jugador - Caja Roja:
+            const forwardVector = new CANNON.Vec3(0, 0, -1);
+            const backwardVector = new CANNON.Vec3(0, 0, 1);
+            const leftVector = new CANNON.Vec3(-1, 0, 0);
+            const rightVector = new CANNON.Vec3(1, 0, 0);
 
-            //Movimiento del jugador - Caja Roja:
             if (keyStates['KeyW'] || keyStates['ArrowUp']) {
-                playerBody.applyForce(new CANNON.Vec3(0, 0, -moveSpeed), playerBody.position);
+                playerBody.applyForce(forwardVector.scale(moveSpeed), playerBody.position);
             }
             if (keyStates['KeyS'] || keyStates['ArrowDown']) {
-                playerBody.applyForce(new CANNON.Vec3(0, 0, moveSpeed), playerBody.position);
+                playerBody.applyForce(backwardVector.scale(moveSpeed), playerBody.position);
             }
             if (keyStates['KeyA'] || keyStates['ArrowLeft']) {
-                playerBody.applyForce(new CANNON.Vec3(-moveSpeed, 0, 0), playerBody.position);
+                playerBody.applyForce(leftVector.scale(moveSpeed), playerBody.position);
             }
             if (keyStates['KeyD'] || keyStates['ArrowRight']) {
-                playerBody.applyForce(new CANNON.Vec3(moveSpeed, 0, 0), playerBody.position);
+                playerBody.applyForce(rightVector.scale(moveSpeed), playerBody.position);
             }
 
             world.step(1 / 60, deltaTime, 3);
@@ -361,8 +366,8 @@ const ManejoFisicas = () => {
                 object.mesh.quaternion.copy(object.body.quaternion);
             });
 
-            playerBody.velocity.x *= 0.45;
-            playerBody.velocity.z *= 0.45;
+            playerBody.velocity.x *= friction;
+            playerBody.velocity.z *= friction;
             playerMesh.position.copy(playerBody.position);
             playerMesh.quaternion.copy(playerBody.quaternion);
 
@@ -384,14 +389,16 @@ const ManejoFisicas = () => {
             removeBarriers();
             removeRoof();
         };
-    }, [barriersEnabled, roofEnabled]);
+    }, [barriersEnabled, roofEnabled, moveSpeed, friction]);
 
     useEffect(() => {
         const gui = new GUI();
         gui.add({ toggleBarriers: () => setBarriersEnabled(!barriersEnabled) }, 'toggleBarriers').name(barriersEnabled ? 'Desactivar Barreras' : 'Activar Barreras');
         gui.add({ toggleRoof: () => setRoofEnabled(!roofEnabled) }, 'toggleRoof').name(roofEnabled ? 'Desactivar Techo' : 'Activar Techo');
+        gui.add({ moveSpeed }, 'moveSpeed').min(1).max(20).step(0.1).name('Velocidad');
+        gui.add({ friction }, 'friction').min(0.1).max(1).step(0.01).name('Fricción');
         return () => gui.destroy();
-    }, [barriersEnabled, roofEnabled]);
+    }, [barriersEnabled, roofEnabled, moveSpeed, friction]);
 
     return (
         <div style={{ position: 'relative', width: '100%', height: '100%' }}>
