@@ -9,7 +9,7 @@ const Laboratorio4 = () => {
         Este ejercicio integra un automovil 3D con sus luces realistas y efecto de sonido de colision 
         cuando el modelo interactua con el escenario.
       </p>
-      <div style={{ height: "800px" }}>
+      <div style={{ height: "800px", width: "100%"}}>
         <Lab_4 />
       </div>
     </div>
