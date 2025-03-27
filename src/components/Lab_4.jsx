@@ -10,6 +10,7 @@ const ManejoFisicas = () => {
     const [roofEnabled, setRoofEnabled] = useState(true);
     const [moveSpeed, setMoveSpeed] = useState(10);
     const [friction, setFriction] = useState(0.45);
+    const [soundsEnabled, setSoundsEnabled] = useState(true); // Nuevo estado para sonidos
     const barriers = useRef([]);
     const roof = useRef(null);
 
@@ -21,6 +22,11 @@ const ManejoFisicas = () => {
          */
         const gui = new GUI();
         const debugObject = {};
+
+        /**
+         * Cargar sonido
+         */
+        const collisionSound = new Audio('/assets/colision1.mp3');
 
         /**
          * Base
@@ -198,6 +204,16 @@ const ManejoFisicas = () => {
                 shape,
                 material: defaultMaterial
             });
+
+            // Detectar colisiones y reproducir sonido
+            body.addEventListener('collide', () => {
+                if (soundsEnabled) {
+                    collisionSound.currentTime = 0; // Reinicia el sonido
+                    collisionSound.play();
+                }
+            });
+
+
             world.addBody(body);
 
             objectsToUpdate.push({ mesh, body });
@@ -389,7 +405,7 @@ const ManejoFisicas = () => {
             removeBarriers();
             removeRoof();
         };
-    }, [barriersEnabled, roofEnabled, moveSpeed, friction]);
+    }, [barriersEnabled, roofEnabled, moveSpeed, friction, soundsEnabled]);
 
     useEffect(() => {
         const gui = new GUI();
@@ -397,8 +413,9 @@ const ManejoFisicas = () => {
         gui.add({ toggleRoof: () => setRoofEnabled(!roofEnabled) }, 'toggleRoof').name(roofEnabled ? 'Desactivar Techo' : 'Activar Techo');
         gui.add({ moveSpeed }, 'moveSpeed').min(1).max(20).step(0.1).name('Velocidad');
         gui.add({ friction }, 'friction').min(0.1).max(1).step(0.01).name('Fricción');
+        gui.add({ toggleSounds: () => setSoundsEnabled(!soundsEnabled) }, 'toggleSounds').name(soundsEnabled ? 'Desactivar Sonidos' : 'Activar Sonidos');
         return () => gui.destroy();
-    }, [barriersEnabled, roofEnabled, moveSpeed, friction]);
+    }, [barriersEnabled, roofEnabled, moveSpeed, friction, soundsEnabled]);
 
     return (
         <div style={{ position: 'relative', width: '100%', height: '100%' }}>
