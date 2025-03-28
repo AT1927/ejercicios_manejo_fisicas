@@ -12,7 +12,7 @@ const ManejoFisicas = () => {
     const [moveSpeed, setMoveSpeed] = useState(10);
     const [friction, setFriction] = useState(0.45);
     const [soundsEnabled, setSoundsEnabled] = useState(true); // Nuevo estado para sonidos
-    const [carModel, setCarModel] = useState('automovil1'); // Estado para el modelo del automóvil
+    //const [carModel, setCarModel] = useState('automovil1'); // Estado para el modelo del automóvil
     const [lightsEnabled, setLightsEnabled] = useState(true); // Estado para las luces
     const barriers = useRef([]);
     const roof = useRef(null);
@@ -165,7 +165,7 @@ const ManejoFisicas = () => {
          */
         const loadCarModel = (modelName) => {
             const loader = new GLTFLoader();
-            loader.load(`/assets/${modelName}.glb`, (gltf) => {
+            loader.load(`/assets/automovil2.glb`, (gltf) => {
                 if (carMesh.current) {
                     scene.remove(carMesh.current);
                     world.removeBody(carBody.current);
@@ -178,21 +178,26 @@ const ManejoFisicas = () => {
                         child.receiveShadow = true;
                     }
                 });
-        
+                
+                /*
                 // Ajustar escala según el modelo
                 if (modelName === 'automovil1') {
                     carMesh.current.scale.set(0.5, 0.5, 0.5); // Escala automovil1
                 } else if (modelName === 'automovil2') {
                     carMesh.current.scale.set(3, 3, 3); // Escala automovil2
                 }
+                */
+                // Ajustar escala para automovil2
+                carMesh.current.scale.set(3, 3, 3); // Escala automovil2
+                carMesh.current.castShadow = true;
         
-                carMesh.current.position.set(0, 0.5, 0);
+                carMesh.current.position.set(0, 0, 0);
                 scene.add(carMesh.current);
         
                 const carShape = new CANNON.Box(new CANNON.Vec3(0.5, 0.25, 1));
                 carBody.current = new CANNON.Body({
                     mass: 1,
-                    position: new CANNON.Vec3(0, 0.5, 0),
+                    position: new CANNON.Vec3(0, 0, 0),
                     shape: carShape,
                     material: defaultMaterial
                 });
@@ -200,7 +205,7 @@ const ManejoFisicas = () => {
             });
         };
 
-        loadCarModel(carModel);
+        loadCarModel();
 
         /**
          * Crear Esferas
@@ -223,7 +228,6 @@ const ManejoFisicas = () => {
         });
         world.addBody(playerBody);
         */
-
 
         const objectsToUpdate = [];
         const sphereGeometry = new THREE.SphereGeometry(1, 20, 20);
@@ -265,7 +269,6 @@ const ManejoFisicas = () => {
 
 
             world.addBody(body);
-
             objectsToUpdate.push({ mesh, body });
         };
 
@@ -405,45 +408,71 @@ const ManejoFisicas = () => {
             const elapsedTime = clock.getElapsedTime();
             const deltaTime = elapsedTime - oldElapsedTime;
             oldElapsedTime = elapsedTime;
-
-            // Movimiento del jugador - Caja Roja:
-            const forwardVector = new CANNON.Vec3(0, 0, -1);
-            const backwardVector = new CANNON.Vec3(0, 0, 1);
-            const leftVector = new CANNON.Vec3(-1, 0, 0);
-            const rightVector = new CANNON.Vec3(1, 0, 0);
-
-            if (keyStates['KeyW'] || keyStates['ArrowUp']) {
-                carBody.current.applyForce(forwardVector.scale(moveSpeed), carBody.current.position);
+        
+            // Movimiento del automóvil
+            if (carBody.current) {
+                // Calcular vectores de dirección basados en la orientación actual del coche
+                const forwardVector = new CANNON.Vec3(
+                    Math.sin(carBody.current.quaternion.y), // Dirección hacia adelante en X
+                    0,
+                    Math.cos(carBody.current.quaternion.y) // Dirección hacia adelante en Z
+                );
+        
+                // Modificar la velocidad directamente para un control más directo
+                if (keyStates['KeyA']) {
+                    // Girar a la izquierda
+                    const speed = new CANNON.Vec3(
+                        -forwardVector.x * moveSpeed, 
+                        0, 
+                        -forwardVector.z * moveSpeed
+                    );
+                    carBody.current.velocity.set(speed.x, 0, speed.z);
+                } else if (keyStates['KeyD']) {
+                    // Girar a la derecha
+                    const speed = new CANNON.Vec3(
+                        forwardVector.x * moveSpeed, 
+                        0, 
+                        forwardVector.z * moveSpeed
+                    );
+                    carBody.current.velocity.set(speed.x, 0, speed.z);
+                } else if (keyStates['KeyW']) {
+                    // Acelerar hacia adelante
+                    const speed = new CANNON.Vec3(
+                        forwardVector.z * moveSpeed, 
+                        0, 
+                        -forwardVector.x * moveSpeed
+                    );
+                    carBody.current.velocity.set(speed.x, -2, speed.z); 
+                } else if (keyStates['KeyS']) {
+                    // Desplazamiento hacia atrás
+                    const speed = new CANNON.Vec3(
+                        -forwardVector.z * moveSpeed, 
+                        0, 
+                        -forwardVector.x * moveSpeed
+                    );
+                    carBody.current.velocity.set(speed.x, -2, speed.z); 
+                }
+                else {
+                    // Detener el movimiento cuando no se presiona tecla
+                    carBody.current.velocity.set(0, 0, 0);
+                }
             }
-            if (keyStates['KeyS'] || keyStates['ArrowDown']) {
-                carBody.current.applyForce(backwardVector.scale(moveSpeed), carBody.current.position);
-            }
-            if (keyStates['KeyA'] || keyStates['ArrowLeft']) {
-                carBody.current.applyForce(leftVector.scale(moveSpeed), carBody.current.position);
-            }
-            if (keyStates['KeyD'] || keyStates['ArrowRight']) {
-                carBody.current.applyForce(rightVector.scale(moveSpeed), carBody.current.position);
-            }
-
+        
+            // Actualizar el mundo físico
             world.step(1 / 60, deltaTime, 3);
-
+        
+            // Sincronizar la posición y rotación del modelo 3D con el cuerpo físico
             if (carMesh.current) {
                 carMesh.current.position.copy(carBody.current.position);
                 carMesh.current.quaternion.copy(carBody.current.quaternion);
             }
-
-            objectsToUpdate.forEach(object => {
+        
+            // Actualizar otros objetos
+            objectsToUpdate.forEach((object) => {
                 object.mesh.position.copy(object.body.position);
                 object.mesh.quaternion.copy(object.body.quaternion);
             });
-            
-            /*
-            carBody.velocity.x *= friction;
-            carBody.velocity.z *= friction;
-            carMesh.position.copy(carBody.position);
-            carMesh.quaternion.copy(carBody.quaternion);
-            */
-
+        
             controls.update();
             renderer.render(scene, camera);
         };
@@ -462,7 +491,7 @@ const ManejoFisicas = () => {
             removeBarriers();
             removeRoof();
         };
-    }, [barriersEnabled, roofEnabled, moveSpeed, friction, soundsEnabled, carModel, lightsEnabled]);
+    }, [barriersEnabled, roofEnabled, moveSpeed, friction, soundsEnabled, lightsEnabled]);
 
     useEffect(() => {
         const gui = new GUI();
@@ -471,9 +500,9 @@ const ManejoFisicas = () => {
         gui.add({ moveSpeed }, 'moveSpeed').min(1).max(20).step(0.1).name('Velocidad');
         gui.add({ friction }, 'friction').min(0.1).max(1).step(0.01).name('Fricción');
         gui.add({ toggleSounds: () => setSoundsEnabled(!soundsEnabled) }, 'toggleSounds').name(soundsEnabled ? 'Desactivar Sonidos' : 'Activar Sonidos');
-        gui.add({ changeCarModel: () => setCarModel(carModel === 'automovil1' ? 'automovil2' : 'automovil1') }, 'changeCarModel').name('Cambiar Modelo');
+        //gui.add({ changeCarModel: () => setCarModel(carModel === 'automovil1' ? 'automovil2' : 'automovil1') }, 'changeCarModel').name('Cambiar Modelo');
         return () => gui.destroy();
-    }, [barriersEnabled, roofEnabled, moveSpeed, friction, soundsEnabled, carModel]);
+    }, [barriersEnabled, roofEnabled, moveSpeed, friction, soundsEnabled, lightsEnabled]);
 
     return (
         <div style={{ position: 'relative', width: '100%', height: '100%' }}>
